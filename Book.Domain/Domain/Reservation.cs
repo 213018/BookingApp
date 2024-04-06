@@ -1,11 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Book.Domain.Identity;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace BookingApplication.Models
+namespace Book.Domain.Domain
 {
-    public class Reservation
+    public class Reservation : BaseEntity
     {
-        [Key]
-        public Guid Id { get; set; }
+
         [Required]
         public DateTime Check_in_date { get; set; }
         public Guid ApartmentId { get; set; }

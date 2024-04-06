@@ -1,8 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Book.Domain.Domain;
+using Microsoft.AspNetCore.Identity;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace BookingApplication.Models
+namespace Book.Domain.Identity
 {
-    public class BookingApplicationUser: IdentityUser
+    public class BookingApplicationUser : IdentityUser
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }

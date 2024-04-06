@@ -1,4 +1,4 @@
-namespace BookingApplication.Models
+namespace Book.Domain
 {
     public class ErrorViewModel
     {

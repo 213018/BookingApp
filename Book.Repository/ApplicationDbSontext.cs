@@ -1,8 +1,10 @@
-﻿using BookingApplication.Models;
+﻿
+using Book.Domain.Domain;
+using Book.Domain.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace BookingApplication.Data
+namespace Book.Repository
 {
     public class ApplicationDbContext : IdentityDbContext<BookingApplicationUser>
     {
@@ -11,8 +13,8 @@ namespace BookingApplication.Data
         {
         }
 
-        public virtual DbSet<BookingApplication.Models.Apartment> Apartments { get; set; }
-        public virtual DbSet<BookingApplication.Models.Reservation> Reservations { get; set; }
+        public virtual DbSet<Apartment> Apartments { get; set; }
+        public virtual DbSet<Reservation> Reservations { get; set; }
 
         public virtual DbSet<BookingList> BookingLists { get; set; }
 

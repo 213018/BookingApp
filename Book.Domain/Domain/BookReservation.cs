@@ -1,8 +1,14 @@
-﻿namespace BookingApplication.Models
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Book.Domain.Domain
 {
-    public class BookReservation
-    {
-        public Guid Id { get; set; }
+    public class BookReservation : BaseEntity
+    { 
+
 
         public Guid ReservationId { get; set; }
 

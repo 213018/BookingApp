@@ -66,7 +66,7 @@ namespace BookingApplication.Controllers
 
         }
 
-        public IActionResult DeleteFromList()
+        public IActionResult bookNow()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
