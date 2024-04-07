@@ -2,39 +2,40 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Book.Domain.Domain;
+using Book.Service.Interface;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using BookingApplication.Data;
-using BookingApplication.Models;
+
 
 namespace BookingApplication.Controllers
 {
     public class ApartmentsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApartmentService _apartmentSerice;
 
-        public ApartmentsController(ApplicationDbContext context)
+        public ApartmentsController(IApartmentService apartmentSerice)
         {
-            _context = context;
+            this._apartmentSerice = apartmentSerice;
         }
 
+
         // GET: Apartments
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.Apartments.ToListAsync());
+            return View(_apartmentSerice.GetAllApartments());
         }
 
         // GET: Apartments/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        public IActionResult Details(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var apartment = await _context.Apartments
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var apartment = _apartmentSerice.GetDetailsForApartment(id);
             if (apartment == null)
             {
                 return NotFound();
@@ -54,27 +55,26 @@ namespace BookingApplication.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,ApartmentName,City,Description,Price_per_night,Rating")] Apartment apartment)
+        public IActionResult Create([Bind("Id,ApartmentName,City,Description,Price_per_night,Rating")] Apartment apartment)
         {
             if (ModelState.IsValid)
             {
                 apartment.Id = Guid.NewGuid();
-                _context.Add(apartment);
-                await _context.SaveChangesAsync();
+                _apartmentSerice.CreateNewApartment(apartment);
                 return RedirectToAction(nameof(Index));
             }
             return View(apartment);
         }
 
         // GET: Apartments/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public IActionResult Edit(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var apartment = await _context.Apartments.FindAsync(id);
+            var apartment = _apartmentSerice.GetDetailsForApartment(id);
             if (apartment == null)
             {
                 return NotFound();
@@ -87,7 +87,7 @@ namespace BookingApplication.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,ApartmentName,City,Description,Price_per_night,Rating")] Apartment apartment)
+        public IActionResult Edit(Guid id, [Bind("Id,ApartmentName,City,Description,Price_per_night,Rating")] Apartment apartment)
         {
             if (id != apartment.Id)
             {
@@ -98,19 +98,13 @@ namespace BookingApplication.Controllers
             {
                 try
                 {
-                    _context.Update(apartment);
-                    await _context.SaveChangesAsync();
+                    _apartmentSerice.UpdateExistingApartment(apartment);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ApartmentExists(apartment.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                   
+                    throw;
+                    
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -118,15 +112,14 @@ namespace BookingApplication.Controllers
         }
 
         // GET: Apartments/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public IActionResult Delete(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var apartment = await _context.Apartments
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var apartment = _apartmentSerice.GetDetailsForApartment(id);
             if (apartment == null)
             {
                 return NotFound();
@@ -138,21 +131,12 @@ namespace BookingApplication.Controllers
         // POST: Apartments/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public IActionResult DeleteConfirmed(Guid id)
         {
-            var apartment = await _context.Apartments.FindAsync(id);
-            if (apartment != null)
-            {
-                _context.Apartments.Remove(apartment);
-            }
-
-            await _context.SaveChangesAsync();
+            _apartmentSerice.DeleteApartment(id);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ApartmentExists(Guid id)
-        {
-            return _context.Apartments.Any(e => e.Id == id);
-        }
+       
     }
 }

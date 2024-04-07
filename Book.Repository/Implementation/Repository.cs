@@ -37,9 +37,23 @@ namespace Book.Repository.Implementation
             return entities.SingleOrDefault(x => x.Id == id);
         }
 
-        public IEnumerable<T> GetAll()
+        public IEnumerable<T> GetAll(string includeProperties = "")
         {
-            return entities.AsEnumerable();
+            IQueryable<T> query = entities;
+
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var includeProperty in includeProperties.Split
+                    (new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProperty);
+                }
+            }
+
+            return query.AsEnumerable();
+
+
+            //return entities.AsEnumerable();
         }
 
         public void Insert(T entity)

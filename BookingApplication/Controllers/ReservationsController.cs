@@ -5,85 +5,75 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using BookingApplication.Data;
-using BookingApplication.Models;
 using System.Security.Claims;
+using Book.Service.Interface;
+using Book.Domain.Domain;
+using System.Diagnostics;
 
 namespace BookingApplication.Controllers
 {
     public class ReservationsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IReservationService _reservationService;
+        private readonly IBookingListService _bookingListService;
+        private readonly IApartmentService _apartmentService;
 
-        public ReservationsController(ApplicationDbContext context)
+        public ReservationsController(IReservationService reservationService, IBookingListService bookingListService, IApartmentService apartmentService)
         {
-            _context = context;
+            _reservationService = reservationService;
+            _bookingListService = bookingListService;
+            _apartmentService = apartmentService;
         }
+
+
+
 
         // GET: Reservations
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var applicationDbContext = _context.Reservations.Include(r => r.Apartment);
-            return View(await applicationDbContext.ToListAsync());
+            return View(_reservationService.GetAllReservations());
         }
 
-        public async Task<IActionResult> AddToList(Guid? id)
+        public IActionResult AddToList(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var reservation = _reservationService.GetDetailsForReservation(id);
 
-            var reservation = await _context.Reservations.FindAsync(id);
-
-            var bookingList = _context.BookingLists.FirstOrDefault(x => x.UserId == userId);
 
             BookReservation bookReservation = new BookReservation();
 
-            if (reservation != null && bookingList != null)
+            if (reservation != null)
             {
                 bookReservation.ReservationId = reservation.Id;
                 bookReservation.Reservation = reservation;
-                bookReservation.BookingListId = bookingList.Id;
-                bookReservation.BookingList = bookingList;
+              
             }
 
             return View(bookReservation);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddToListConfirmed(BookReservation model)
+        public IActionResult AddToListConfirmed(BookReservation model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var bookingList = _context.BookingLists.FirstOrDefault(x => x.UserId == userId);
-
-            if (bookingList != null)
-            {
-                if (bookingList.BookReservations == null)
-                {
-                    bookingList.BookReservations = new List<BookReservation>();
-                }
-
-                bookingList.BookReservations.Add(model);
-                await _context.SaveChangesAsync();
-            }
-            return View("Index", await _context.Reservations.ToListAsync());
+           _bookingListService.AddToBookingListConfirmed(model, userId);
+            return View("Index", _reservationService.GetAllReservations());
         }
 
         // GET: Reservations/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        public IActionResult Details(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var reservation = await _context.Reservations
-                .Include(r => r.Apartment)
-                .FirstOrDefaultAsync(m => m.Id == id);
+           var reservation = _reservationService.GetDetailsForReservation(id);
             if (reservation == null)
             {
                 return NotFound();
@@ -95,7 +85,7 @@ namespace BookingApplication.Controllers
         // GET: Reservations/Create
         public IActionResult Create()
         {
-            ViewData["ApartmentId"] = new SelectList(_context.Apartments, "Id", "ApartmentName");
+            ViewData["ApartmentId"] = new SelectList(_apartmentService.GetAllApartments(), "Id", "ApartmentName");
             return View();
         }
 
@@ -104,38 +94,38 @@ namespace BookingApplication.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Check_in_date,ApartmentId")] Reservation reservation)
+        public IActionResult Create([Bind("Id,Check_in_date,ApartmentId")] Reservation reservation)
         {
             if (ModelState.IsValid)
             {
-                var apartment = await _context.Apartments.FindAsync(reservation.ApartmentId);
+                var apartment = _apartmentService.GetDetailsForApartment(reservation.ApartmentId);
+                
                 if (apartment != null)
                     reservation.Apartment = apartment;
 
 
                 reservation.Id = Guid.NewGuid();
-                _context.Add(reservation);
-                await _context.SaveChangesAsync();
+
+                _reservationService.CreateNewReservation(reservation);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ApartmentId"] = new SelectList(_context.Apartments, "Id", "ApartmentName", reservation.ApartmentId);
+            ViewData["ApartmentId"] = new SelectList(_apartmentService.GetAllApartments(), "Id", "ApartmentName", reservation.ApartmentId);
             return View(reservation);
         }
 
         // GET: Reservations/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public IActionResult Edit(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var reservation = await _context.Reservations.FindAsync(id);
+            var reservation = _reservationService.GetDetailsForReservation(id);
             if (reservation == null)
             {
                 return NotFound();
             }
-            ViewData["ApartmentId"] = new SelectList(_context.Apartments, "Id", "ApartmentName", reservation.ApartmentId);
             return View(reservation);
         }
 
@@ -144,7 +134,7 @@ namespace BookingApplication.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Check_in_date,ApartmentId")] Reservation reservation)
+        public IActionResult Edit(Guid id, [Bind("Id,Check_in_date,ApartmentId")] Reservation reservation)
         {
             if (id != reservation.Id)
             {
@@ -155,37 +145,26 @@ namespace BookingApplication.Controllers
             {
                 try
                 {
-                    _context.Update(reservation);
-                    await _context.SaveChangesAsync();
+                    _reservationService.UpdateExistingReservation(reservation);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ReservationExists(reservation.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ApartmentId"] = new SelectList(_context.Apartments, "Id", "ApartmentName", reservation.ApartmentId);
             return View(reservation);
         }
 
         // GET: Reservations/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public IActionResult Delete(Guid? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var reservation = await _context.Reservations
-                .Include(r => r.Apartment)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var reservation = _reservationService.GetDetailsForReservation(id);
             if (reservation == null)
             {
                 return NotFound();
@@ -197,21 +176,11 @@ namespace BookingApplication.Controllers
         // POST: Reservations/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public IActionResult DeleteConfirmed(Guid id)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation != null)
-            {
-                _context.Reservations.Remove(reservation);
-            }
-
-            await _context.SaveChangesAsync();
+            _reservationService.DeleteReservation(id);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ReservationExists(Guid id)
-        {
-            return _context.Reservations.Any(e => e.Id == id);
-        }
     }
 }

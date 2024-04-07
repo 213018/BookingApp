@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Implementation\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Book.Domain\Book.Domain.csproj" />
     <ProjectReference Include="..\Book.Repository\Book.Repository.csproj" />
   </ItemGroup>

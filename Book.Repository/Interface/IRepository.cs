@@ -9,7 +9,7 @@ namespace Book.Repository.Interface
 {
     public interface IRepository<T> where T : BaseEntity
     {
-        IEnumerable<T> GetAll();
+        public IEnumerable<T> GetAll(string includeProperties = "");
         T Get(Guid? id);
         void Insert(T entity);
         void Update(T entity);
